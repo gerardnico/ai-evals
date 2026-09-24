@@ -1,32 +1,61 @@
 import asyncio
 import logging
-from datetime import datetime
 
 import typer
 from gerardnico.aitm import aitm
-from gerardnico.aitm.api import Agent, Context, Session
+from gerardnico.aitm.context_builder import ContextBuilder
+from gerardnico.aitm.api import Agent, Context
 
 typerCli = typer.Typer()
 
 logger = logging.getLogger(__name__)
 
 
-@typerCli.command()
+@typerCli.command(
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
 def run(
         ctx: typer.Context,
         agent: Agent = Agent.BASH,
 ):
-    context: Context = Context(
-        agent=agent,
-        api="https://webhook.site/ddb009b6-d74c-4cf7-9491-fb8472828024",
-        session=Session(
-            # we replace because we get a problem with : in bash
-            id=datetime.now().isoformat(timespec="seconds").replace(":","-")
-        )
+    """Run an agent"""
+    context: Context = (
+        ContextBuilder()
+        .with_agent(agent)
+        .with_args(ctx.args)
+        .build()
     )
-    # Be sure to have the runtime dir
-    context.runtime_dir.mkdir(parents=True, exist_ok=True)
-    """Run"""
+    asyncio.run(aitm.run(context))
+
+@typerCli.command(
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
+def bash(
+        ctx: typer.Context,
+):
+    """Run Bash"""
+    # aitm bash -c "curl -x http://localhost:8080 http://example.com"
+    context: Context = (
+        ContextBuilder()
+        .with_agent(Agent.BASH)
+        .with_args(ctx.args)
+        .build()
+    )
+    asyncio.run(aitm.run(context))
+
+@typerCli.command(
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
+def pi(
+        ctx: typer.Context,
+):
+    """Run Pi"""
+    context: Context = (
+        ContextBuilder()
+        .with_agent(Agent.PI)
+        .with_args(ctx.args)
+        .build()
+    )
     asyncio.run(aitm.run(context))
 
 

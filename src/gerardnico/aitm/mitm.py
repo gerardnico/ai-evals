@@ -37,7 +37,9 @@ class MitmproxyRunner:
         opts = options.Options(listen_host=self.host, listen_port=self.port)
         self.master = DumpMaster(
             opts,
+            # don't keep mitmproxy's own startup/log messages
             with_termlog=False,
+            # skips adding the dumper addon that prints request/response info to stdout
             with_dumper=False,
             loop=loop
         )

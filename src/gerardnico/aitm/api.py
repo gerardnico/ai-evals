@@ -25,13 +25,13 @@ class Context:
     api: str
     # Session information
     session: Session
-    # For test
-    interactive_mode: bool = True
     # Runtime data (such as log)
     runtime_dir: Path = Path.cwd() / ".aitm"
     # XDG_DATA_HOME
     user_dir: Path = Path(user_data_dir("aitm", "aitm"))
     # the agent to wrap
     agent: Agent = Agent.BASH,
+    # the agent arguments
+    agent_args: list[str] = [],
     # the port for mitm
     mitm_port: int = 8080

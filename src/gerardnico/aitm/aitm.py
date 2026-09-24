@@ -26,33 +26,34 @@ async def run(context: Context) -> None:
         print("Starting proxy...")
         proxy.start()
 
+        agent_args = []
+        agent_env = {}
         match context.agent:
             case Agent.BASH:
                 print("Starting bash...")
                 print(f"e.g.: curl -x http://localhost:{context.mitm_port} http://example.com")
-                bash_args = ["bash", "--noprofile", "--norc"]
-                if context.interactive_mode:
-                    bash_args.append("-i")
+                agent_args = ["bash"]
+                if len(context.agent_args) == 0:
+                    agent_args += ["--noprofile", "--norc", "-i"]
                 else:
-                    bash_args.append("-c")
-                    bash_args.append(f"curl -x http://localhost:{context.mitm_port} http://example.com")
-                subprocess.run(
-                    bash_args,
-                    check=True,
-                    env={
-                        "PATH": os.environ["PATH"],
-                        "PS1": "mitm-bash> "
-                    })
+                    agent_args += context.agent_args
+                agent_env = {
+                    "PATH": os.environ["PATH"],
+                    "PS1": "mitm-bash> "
+                }
             case Agent.PI:
                 print("Starting pi...")
-                env = os.environ.copy()
-                env["OPENROUTER_API_KEY"] = get_secret("gerardnico/openrouter/api-key")
-                subprocess.run(
-                    ["pi"],
-                    check=True,
-                    env=env)
+                agent_env = os.environ.copy()
+                agent_env["OPENROUTER_API_KEY"] = get_secret("gerardnico/openrouter/api-key")
+                agent_args = ["pi"]
             case _:
                 raise ValueError(f"Unknown agent: {context.agent}")
+
+        subprocess.run(
+            agent_args,
+            check=True,
+            env=agent_env
+        )
 
     except KeyboardInterrupt:
         print("KeyBoard interrupt")
