@@ -1,0 +1,21 @@
+version: '3'
+
+tasks:
+  install:
+    cmds:
+      - |
+        uv sync
+  # Execute the `transcribe` cli
+  mitm:
+    # works also on Windows as gotask uses its own sh engine
+    # call it with: task transcribe -- {ARGS}
+    # example: task transcribe --verbose mcp --transport http
+    cmds:
+      - |
+        uv run -m gerardnico.mitm.cli {{.CLI_ARGS}}
+  test:
+    cmds:
+      # we cd in tests as JetBrains by default starts the test in the tests root directory
+      # verbose: uv run pytest -v
+      - |
+        cd tests && uv run --project .. pytest
