@@ -1,0 +1,80 @@
+"""
+Run mitmproxy as an embedded library
+"""
+
+import asyncio
+import socket
+import threading
+import time
+
+from gerardnico.aitm.api import Context
+from gerardnico.aitm.mitm_addon_fetch_logger import FetchLogger
+from gerardnico.aitm.mitm_addon_redirect import Redirect
+from mitmproxy import options
+from mitmproxy.tools.dump import DumpMaster
+
+
+class MitmproxyRunner:
+    def __init__(self, context: Context):
+        self.host = '127.0.0.1'
+        self.port = context.mitm_port
+        self.master = None
+        self.thread = None
+        self.created = threading.Event()
+        self.context = context
+
+        # Ensure no listening socket
+        try:
+            with socket.create_connection((self.host, self.port), timeout=0.2):
+                raise Exception("Proxy port is already taken")
+        except OSError:
+            pass
+
+    def _run_proxy(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        opts = options.Options(listen_host=self.host, listen_port=self.port)
+        self.master = DumpMaster(
+            opts,
+            with_termlog=False,
+            with_dumper=False,
+            loop=loop
+        )
+        self.master.addons.add(Redirect(self.context))
+        self.master.addons.add(FetchLogger(self.context))
+        self.created.set()
+
+        try:
+            loop.run_until_complete(self.master.run())
+        finally:
+            loop.close()
+
+    def start(self):
+        self.thread = threading.Thread(
+            target=self._run_proxy,
+            name="aitm-proxy",
+            daemon=True,
+        )
+        self.thread.start()
+        self.created.wait()
+
+        # Ensure mitmproxy has actually bound its listening socket.
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            try:
+                with socket.create_connection((self.host, self.port), timeout=0.2):
+                    print(f"Aitm Proxy listening on http://{self.host}:{self.port}")
+                    return
+            except OSError:
+                time.sleep(0.1)
+
+        self.stop()
+        raise TimeoutError("Aitm proxy did not start listening")
+
+    def stop(self):
+        if self.master is not None:
+            self.master.shutdown()
+
+        if self.thread is not None:
+            self.thread.join(timeout=5)

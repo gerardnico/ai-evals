@@ -1,13 +1,14 @@
 
 # https://packaging.python.org/en/latest/guides/writing-pyproject-toml/
 [project]
-name = "mitm"
+name = "aitm"
 requires-python = ">=3.12"
 readme = "README.md"
 version = "0.1.0"
 dependencies = [
   "mitmproxy==12.2.3",
   "typer==0.27.2",
+  "platformdirs==4.11.12"
 ]
 
 
@@ -33,7 +34,7 @@ build-backend = "hatchling.build"
 # Note the hyphen vs underscore —
 # the CLI command uses a hyphen (as you named it),
 # but the Python module name uses an underscore since hyphens aren't valid in Python identifiers.
-transcribe = "gerardnico.mitm.cli:cli"
+aitm = "gerardnico.aitm.cli:cli"
 
 [project.urls]
 Homepage = "https://github.com/gerardnico/mitm"
