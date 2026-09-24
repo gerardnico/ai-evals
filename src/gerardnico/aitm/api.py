@@ -32,6 +32,8 @@ class Context:
     default_base_url: str|None
     # Session information
     session: Session
+    # the web port for mitm
+    mitm_web: int|None = 8081
     # the port for mitm
     mitm_port: int = 8080
     # Runtime data (such as log)

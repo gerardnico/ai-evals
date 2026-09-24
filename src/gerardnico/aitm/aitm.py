@@ -19,7 +19,6 @@ async def run(context: Context) -> None:
     def handle_shutdown(signum, frame):
         print(f"Received signal {signum}, shutting down the proxy")
         proxy.stop()
-        sys.exit(0)
 
     signal.signal(signal.SIGTERM, handle_shutdown)
     signal.signal(signal.SIGINT, handle_shutdown)
@@ -57,6 +56,8 @@ async def run(context: Context) -> None:
                 agent_env = os.environ.copy()
                 agent_env["OPENROUTER_API_KEY"] = get_secret("gerardnico/openrouter/api-key")
                 agent_env["PI_CODING_AGENT_DIR"] = str(agent_directory)
+                # session?
+                # pi --session 01a0d53c-df27-73b4-8e7f-72fc77b05e35
                 agent_args = ["pi"] + context.agent_args
             case _:
                 raise ValueError(f"Unknown agent: {context.agent}")
