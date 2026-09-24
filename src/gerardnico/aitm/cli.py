@@ -22,7 +22,7 @@ def run(
     context: Context = (
         ContextBuilder()
         .with_agent(agent)
-        .with_args(ctx.args)
+        .with_agent_args(ctx.args)
         .build()
     )
     asyncio.run(aitm.run(context))
@@ -38,7 +38,7 @@ def bash(
     context: Context = (
         ContextBuilder()
         .with_agent(Agent.BASH)
-        .with_args(ctx.args)
+        .with_agent_args(ctx.args)
         .build()
     )
     asyncio.run(aitm.run(context))
@@ -53,7 +53,7 @@ def pi(
     context: Context = (
         ContextBuilder()
         .with_agent(Agent.PI)
-        .with_args(ctx.args)
+        .with_agent_args(ctx.args)
         .build()
     )
     asyncio.run(aitm.run(context))

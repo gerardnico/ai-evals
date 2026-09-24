@@ -16,7 +16,7 @@ from mitmproxy.tools.dump import DumpMaster
 
 class MitmproxyRunner:
     def __init__(self, context: Context):
-        self.host = '127.0.0.1'
+        self.host = context.mitm_host
         self.port = context.mitm_port
         self.master = None
         self.thread = None

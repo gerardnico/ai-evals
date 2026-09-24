@@ -5,6 +5,7 @@ from pathlib import Path
 
 from platformdirs import user_data_dir
 
+
 class Agent(str, Enum):
     """The agent/cli that we wrap"""
     PI = "pi"
@@ -20,11 +21,19 @@ class Session:
 
 
 @dataclass
+class Pi:
+    # Config model
+    conf: Path
+
+
+@dataclass
 class Context:
     # API URL
-    api: str
+    default_base_url: str|None
     # Session information
     session: Session
+    # the port for mitm
+    mitm_port: int = 8080
     # Runtime data (such as log)
     runtime_dir: Path = Path.cwd() / ".aitm"
     # XDG_DATA_HOME
@@ -32,6 +41,12 @@ class Context:
     # the agent to wrap
     agent: Agent = Agent.BASH,
     # the agent arguments
-    agent_args: list[str] = [],
-    # the port for mitm
-    mitm_port: int = 8080
+    agent_args: list[str] = []
+
+    @property
+    def mitm_host(self) -> str:
+        return "localhost"
+
+    @property
+    def mitm_url(self) -> str:
+        return f"http://{self.mitm_host}:{self.mitm_port}"

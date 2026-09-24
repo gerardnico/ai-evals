@@ -3,8 +3,10 @@ import signal
 import subprocess
 import sys
 
-from gerardnico.aitm.api import Context, Agent
+from gerardnico.aitm import pi
+from gerardnico.aitm.api import Context, Agent, Pi
 from gerardnico.aitm.mitm import MitmproxyRunner
+from gerardnico.aitm.mitm_addon_redirect import Provider
 from gerardnico.aitm.pass_cli import get_secret
 
 
@@ -31,7 +33,7 @@ async def run(context: Context) -> None:
         match context.agent:
             case Agent.BASH:
                 print("Starting bash...")
-                print(f"e.g.: curl -x http://localhost:{context.mitm_port} http://example.com")
+                print(f"e.g.: curl -x {context.mitm_url} http://example.com")
                 agent_args = ["bash"]
                 if len(context.agent_args) == 0:
                     agent_args += ["--noprofile", "--norc", "-i"]
@@ -42,10 +44,20 @@ async def run(context: Context) -> None:
                     "PS1": "mitm-bash> "
                 }
             case Agent.PI:
+                # https://pi.dev/docs/latest/configuration#agent-directory
+                agent_directory = context.runtime_dir / "pi-agent"
+                agent_directory.mkdir(parents=True, exist_ok=True)
+                pi.update_base_url(
+                    # default: ~/.pi/agent/models.json
+                    models_path=agent_directory / "models.json",
+                    provider="openrouter",
+                    base_url=f"{context.mitm_url}/{Provider.OPENROUTER.value}/api/v1",
+                )
                 print("Starting pi...")
                 agent_env = os.environ.copy()
                 agent_env["OPENROUTER_API_KEY"] = get_secret("gerardnico/openrouter/api-key")
-                agent_args = ["pi"]
+                agent_env["PI_CODING_AGENT_DIR"] = str(agent_directory)
+                agent_args = ["pi"] + context.agent_args
             case _:
                 raise ValueError(f"Unknown agent: {context.agent}")
 
