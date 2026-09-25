@@ -4,7 +4,7 @@ tasks:
   install:
     cmds:
       - |
-        uv sync
+        uv sync --active
   # Deprecated: after install, it can be called directly
   # Execute the `aitm` cli
   # call it with: task aitm -- {ARGS}

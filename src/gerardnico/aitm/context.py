@@ -45,7 +45,7 @@ class Context:
     # Session information
     session: Session
     # the web port for mitm
-    mitm_web: int | None = 8081
+    mitm_web_port: int | None = 8081
     # the port for mitm
     mitm_port: int = 8080
     # Runtime data (such as log)
