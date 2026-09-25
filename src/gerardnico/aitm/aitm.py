@@ -40,16 +40,15 @@ class Aitm:
             match self.context.agent:
                 case Agent.BASH:
                     print("Starting bash...")
-                    print(f"e.g.: curl -x {self.context.mitm_url} http://example.com")
+                    print(
+                        f"e.g.: curl -x {self.context.mitm_url} https://webhook.site/ddb009b6-d74c-4cf7-9491-fb8472828024")
                     agent_args = ["bash"]
-                    if len(self.context.agent_args) == 0:
-                        agent_args += ["--noprofile", "--norc", "-i"]
+                    agent_env = os.environ.copy()
+                    if len(self.context.agent_args) == 0 and self.context.agent_interactive:
+                        agent_args += ["--noprofile", "--norc"]
+                        agent_env["PS1"] = "mitm-bash> "
                     else:
                         agent_args += self.context.agent_args
-                    agent_env = {
-                        "PATH": os.environ["PATH"],
-                        "PS1": "mitm-bash> "
-                    }
                 case Agent.PI:
                     # https://pi.dev/docs/latest/configuration#agent-directory
                     agent_directory = self.context.runtime_dir / "pi-agent"
@@ -63,16 +62,17 @@ class Aitm:
                         base_url=f"{self.context.mitm_url}/{Provider.OPENROUTER.value}/api/v1",
                     )
                     print("Starting pi...")
+                    # https://pi.dev/docs/latest/environment-variables#pi-process-configuration
                     agent_env = os.environ.copy()
                     agent_env["OPENROUTER_API_KEY"] = get_secret("gerardnico/openrouter/api-key")
                     agent_env["PI_CODING_AGENT_DIR"] = str(agent_directory)
+                    agent_env["PI_CODING_AGENT_SESSION_DIR"] = str(session_directory)
+                    agent_env["HTTP_PROXY"] = self.context.mitm_url
                     agent_args = (
                             [
                                 "pi",
                                 "--session-id",
-                                self.context.session.id,
-                                "--session-dir",
-                                str(session_directory)
+                                self.context.session.id
                             ]
                             + self.context.agent_args
                     )
@@ -84,7 +84,8 @@ class Aitm:
                 capture_output = True
             result = subprocess.run(
                 agent_args,
-                check=True,
+                # don't throw if any error
+                check=False,
                 env=agent_env,
                 capture_output=capture_output,
                 # decode string instead of bytes

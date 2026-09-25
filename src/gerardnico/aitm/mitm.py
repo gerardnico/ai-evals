@@ -63,7 +63,7 @@ class MitmproxyRunner:
                 with_dumper=False,
             )
 
-        self.master.addons.add(Redirect(self.context))
+        # self.master.addons.add(Redirect(self.context))
         self.master.addons.add(FetchLogger(self.context))
         self.created.set()
 

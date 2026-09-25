@@ -1,11 +1,9 @@
-import asyncio
 import logging
 
 import typer
-from gerardnico.aitm import aitm
 from gerardnico.aitm.aitm import Aitm
-from gerardnico.aitm.context import ContextBuilder, Context, build_context
 from gerardnico.aitm.api import Agent
+from gerardnico.aitm.context import Context, build_context
 
 typerCli = typer.Typer()
 

@@ -9,14 +9,9 @@ from platformdirs import user_data_dir
 
 def build_context(mitm_port=8080,
                   agent_args=[],
-                  default_provider_url=None,
                   agent=Agent.BASH) -> "Context":
     if agent_args is None:
         agent_args = []
-    if default_provider_url is None:
-        match agent:
-            case Agent.BASH:
-                default_provider_url = "https://webhook.site/ddb009b6-d74c-4cf7-9491-fb8472828024"
 
     # Interactivity
     agent_interactive: bool = True
@@ -31,7 +26,6 @@ def build_context(mitm_port=8080,
     # Building context
     context = Context(
         agent=agent,
-        default_provider_url=default_provider_url,
         session=Session(
             # we replace because we get a problem with : in bash
             id=datetime.now().isoformat(timespec="seconds").replace(":", "-"),
@@ -48,8 +42,6 @@ def build_context(mitm_port=8080,
 
 @dataclass
 class Context:
-    # API URL
-    default_provider_url: str | None
     # Session information
     session: Session
     # the web port for mitm
