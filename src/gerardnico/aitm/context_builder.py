@@ -2,6 +2,29 @@ from gerardnico.aitm.api import Context, Agent, Session
 from datetime import datetime
 
 
+def build_context(mitm_port = 8080,
+                  agent_args = [],
+                  default_provider_url = None,
+                  agent = Agent.BASH) -> "Context":
+    if default_provider_url is None:
+        match agent:
+            case Agent.BASH:
+                default_provider_url = "https://webhook.site/ddb009b6-d74c-4cf7-9491-fb8472828024"
+
+    context = Context(
+        agent=agent,
+        default_provider_url=default_provider_url,
+        session=Session(
+            # we replace because we get a problem with : in bash
+            id=datetime.now().isoformat(timespec="seconds").replace(":", "-")
+        ),
+        agent_args=agent_args,
+        mitm_port=mitm_port
+    )
+    # Be sure to have the runtime dir
+    context.runtime_dir.mkdir(parents=True, exist_ok=True)
+    return context
+
 class ContextBuilder:
 
     def __init__(self):
@@ -35,7 +58,7 @@ class ContextBuilder:
 
         context = Context(
             agent=self.agent,
-            default_base_url=self.default_base_url,
+            default_provider_url=self.default_base_url,
             session=Session(
                 # we replace because we get a problem with : in bash
                 id=datetime.now().isoformat(timespec="seconds").replace(":", "-")

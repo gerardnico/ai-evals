@@ -3,6 +3,7 @@ import logging
 
 import typer
 from gerardnico.aitm import aitm
+from gerardnico.aitm.aitm import Aitm
 from gerardnico.aitm.context_builder import ContextBuilder
 from gerardnico.aitm.api import Agent, Context
 
@@ -25,7 +26,7 @@ def run(
         .with_agent_args(ctx.args)
         .build()
     )
-    asyncio.run(aitm.run(context))
+    Aitm(context).run()
 
 @typerCli.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
@@ -41,7 +42,7 @@ def bash(
         .with_agent_args(ctx.args)
         .build()
     )
-    asyncio.run(aitm.run(context))
+    Aitm(context).run()
 
 @typerCli.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
@@ -56,7 +57,7 @@ def pi(
         .with_agent_args(ctx.args)
         .build()
     )
-    asyncio.run(aitm.run(context))
+    Aitm(context).run()
 
 
 # By default, the callback is only executed before executing a command.

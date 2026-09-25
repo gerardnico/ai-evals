@@ -35,7 +35,7 @@ class Redirect:
         original_path = urlparse(original_url).path or "/"
 
         print(f"[intercepted] {self.context.session.count} - {flow.request.method} {original_path}")
-        base_url: str|None = get_redirect_base_url(original_path, self.context.default_base_url)
+        base_url: str|None = get_redirect_base_url(original_path, self.context.default_provider_url)
         if base_url is None:
             raise Exception(f"No base url could be found for the path {original_path}")
         flow.request.url = base_url

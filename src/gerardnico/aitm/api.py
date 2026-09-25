@@ -29,7 +29,7 @@ class Pi:
 @dataclass
 class Context:
     # API URL
-    default_base_url: str|None
+    default_provider_url: str | None
     # Session information
     session: Session
     # the web port for mitm

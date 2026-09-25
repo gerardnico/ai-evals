@@ -1,75 +1,81 @@
 import os
 import signal
 import subprocess
-import sys
 
 from gerardnico.aitm import pi
-from gerardnico.aitm.api import Context, Agent, Pi
+from gerardnico.aitm.api import Context, Agent
 from gerardnico.aitm.mitm import MitmproxyRunner
 from gerardnico.aitm.mitm_addon_redirect import Provider
 from gerardnico.aitm.pass_cli import get_secret
 
 
-async def run(context: Context) -> None:
-    """Runs master.run() in its own event loop, in a separate thread."""
-    proxy = MitmproxyRunner(context)
+class Aitm:
 
-    """Handle IDE debugging shutdown"""
+    def __init__(self, context: Context):
+        super().__init__()
+        self.context = context
+        self.proxy = MitmproxyRunner(self.context)
+        signal.signal(signal.SIGTERM, self.handle_shutdown)
+        signal.signal(signal.SIGINT, self.handle_shutdown)
 
-    def handle_shutdown(signum, frame):
+    def handle_shutdown(self, signum, frame):
+        """Handle IDE debugging shutdown"""
         print(f"Received signal {signum}, shutting down the proxy")
-        proxy.stop()
+        self.stop()
 
-    signal.signal(signal.SIGTERM, handle_shutdown)
-    signal.signal(signal.SIGINT, handle_shutdown)
-
-    try:
-        print("Starting proxy...")
-        proxy.start()
-
-        agent_args = []
-        agent_env = {}
-        match context.agent:
-            case Agent.BASH:
-                print("Starting bash...")
-                print(f"e.g.: curl -x {context.mitm_url} http://example.com")
-                agent_args = ["bash"]
-                if len(context.agent_args) == 0:
-                    agent_args += ["--noprofile", "--norc", "-i"]
-                else:
-                    agent_args += context.agent_args
-                agent_env = {
-                    "PATH": os.environ["PATH"],
-                    "PS1": "mitm-bash> "
-                }
-            case Agent.PI:
-                # https://pi.dev/docs/latest/configuration#agent-directory
-                agent_directory = context.runtime_dir / "pi-agent"
-                agent_directory.mkdir(parents=True, exist_ok=True)
-                pi.update_base_url(
-                    # default: ~/.pi/agent/models.json
-                    models_path=agent_directory / "models.json",
-                    provider="openrouter",
-                    base_url=f"{context.mitm_url}/{Provider.OPENROUTER.value}/api/v1",
-                )
-                print("Starting pi...")
-                agent_env = os.environ.copy()
-                agent_env["OPENROUTER_API_KEY"] = get_secret("gerardnico/openrouter/api-key")
-                agent_env["PI_CODING_AGENT_DIR"] = str(agent_directory)
-                # session?
-                # pi --session 01a0d53c-df27-73b4-8e7f-72fc77b05e35
-                agent_args = ["pi"] + context.agent_args
-            case _:
-                raise ValueError(f"Unknown agent: {context.agent}")
-
-        subprocess.run(
-            agent_args,
-            check=True,
-            env=agent_env
-        )
-
-    except KeyboardInterrupt:
-        print("KeyBoard interrupt")
-    finally:
+    def stop(self):
         print("Shutting down the proxy")
-        proxy.stop()
+        self.proxy.stop()
+
+    def run(self) -> None:
+        """Runs master.run() in its own event loop, in a separate thread."""
+        
+        try:
+            print("Starting proxy...")
+            self.proxy.start()
+
+            agent_args = []
+            agent_env = {}
+            match self.context.agent:
+                case Agent.BASH:
+                    print("Starting bash...")
+                    print(f"e.g.: curl -x {self.context.mitm_url} http://example.com")
+                    agent_args = ["bash"]
+                    if len(self.context.agent_args) == 0:
+                        agent_args += ["--noprofile", "--norc", "-i"]
+                    else:
+                        agent_args += self.context.agent_args
+                    agent_env = {
+                        "PATH": os.environ["PATH"],
+                        "PS1": "mitm-bash> "
+                    }
+                case Agent.PI:
+                    # https://pi.dev/docs/latest/configuration#agent-directory
+                    agent_directory = self.context.runtime_dir / "pi-agent"
+                    agent_directory.mkdir(parents=True, exist_ok=True)
+                    pi.update_base_url(
+                        # default: ~/.pi/agent/models.json
+                        models_path=agent_directory / "models.json",
+                        provider="openrouter",
+                        base_url=f"{self.context.mitm_url}/{Provider.OPENROUTER.value}/api/v1",
+                    )
+                    print("Starting pi...")
+                    agent_env = os.environ.copy()
+                    agent_env["OPENROUTER_API_KEY"] = get_secret("gerardnico/openrouter/api-key")
+                    agent_env["PI_CODING_AGENT_DIR"] = str(agent_directory)
+                    # session?
+                    # pi --session 01a0d53c-df27-73b4-8e7f-72fc77b05e35
+                    agent_args = ["pi"] + self.context.agent_args
+                case _:
+                    raise ValueError(f"Unknown agent: {self.context.agent}")
+
+            subprocess.run(
+                agent_args,
+                check=True,
+                env=agent_env
+            )
+
+        except KeyboardInterrupt:
+            print("KeyBoard interrupt")
+        finally:
+            self.stop()
