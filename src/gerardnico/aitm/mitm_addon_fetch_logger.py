@@ -3,7 +3,7 @@ Dump each fetch (request/response) as raw HTTP files
 """
 import os
 
-from gerardnico.aitm.api import Context
+from gerardnico.aitm.context import Context
 from mitmproxy import ctx, http
 from pathlib import Path
 import logging

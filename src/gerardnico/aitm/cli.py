@@ -4,8 +4,8 @@ import logging
 import typer
 from gerardnico.aitm import aitm
 from gerardnico.aitm.aitm import Aitm
-from gerardnico.aitm.context_builder import ContextBuilder
-from gerardnico.aitm.api import Agent, Context
+from gerardnico.aitm.context import ContextBuilder, Context, build_context
+from gerardnico.aitm.api import Agent
 
 typerCli = typer.Typer()
 
@@ -20,13 +20,12 @@ def run(
         agent: Agent = Agent.BASH,
 ):
     """Run an agent"""
-    context: Context = (
-        ContextBuilder()
-        .with_agent(agent)
-        .with_agent_args(ctx.args)
-        .build()
+    context: Context = build_context(
+        agent=agent,
+        agent_args=ctx.args
     )
     Aitm(context).run()
+
 
 @typerCli.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
@@ -34,15 +33,17 @@ def run(
 def bash(
         ctx: typer.Context,
 ):
-    """Run Bash"""
-    # aitm bash -c "curl -x http://localhost:8080 http://example.com"
-    context: Context = (
-        ContextBuilder()
-        .with_agent(Agent.BASH)
-        .with_agent_args(ctx.args)
-        .build()
+    """
+        Run Bash
+        example: aitm bash -c "curl -x http://localhost:8080 http://example.com"
+    """
+
+    context: Context = build_context(
+        agent=Agent.BASH,
+        agent_args=ctx.args
     )
     Aitm(context).run()
+
 
 @typerCli.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
@@ -51,11 +52,9 @@ def pi(
         ctx: typer.Context,
 ):
     """Run Pi"""
-    context: Context = (
-        ContextBuilder()
-        .with_agent(Agent.PI)
-        .with_agent_args(ctx.args)
-        .build()
+    context: Context = build_context(
+        agent=Agent.PI,
+        agent_args=ctx.args
     )
     Aitm(context).run()
 

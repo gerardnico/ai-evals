@@ -1,7 +1,6 @@
 from gerardnico.aitm.aitm import Aitm
-from gerardnico.aitm.api import Context, Agent
-from gerardnico.aitm.context_builder import ContextBuilder, build_context
-
+from gerardnico.aitm.api import Agent
+from gerardnico.aitm.context import ContextBuilder, build_context, Context
 
 
 def test_aitm_run_bash():

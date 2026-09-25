@@ -7,7 +7,7 @@ import socket
 import threading
 import time
 
-from gerardnico.aitm.api import Context
+from gerardnico.aitm.context import Context
 from gerardnico.aitm.mitm_addon_fetch_logger import FetchLogger
 from gerardnico.aitm.mitm_addon_redirect import Redirect
 from mitmproxy import options
@@ -41,7 +41,8 @@ class MitmproxyRunner:
             listen_host=self.host,
             listen_port=self.port,
         )
-        if self.context.mitm_web is not None:
+        # In non-interactive mode, no webui is needed
+        if self.context.mitm_web is not None and self.context.agent_interactive == False:
             self.master = WebMaster(
                 opts,
                 # don't keep mitmproxy's own startup/log messages

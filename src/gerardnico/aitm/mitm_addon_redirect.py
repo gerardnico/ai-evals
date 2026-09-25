@@ -1,4 +1,4 @@
-from gerardnico.aitm.api import Context
+from gerardnico.aitm.context import Context
 from mitmproxy import http
 from urllib.parse import urlparse
 from enum import Enum
