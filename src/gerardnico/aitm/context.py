@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from attr import dataclass
-from gerardnico.aitm.api import Agent, Session
+from gerardnico.aitm.api import Agent, Session, Collector
 from datetime import datetime
 
 from platformdirs import user_data_dir
@@ -43,6 +43,7 @@ def build_context(mitm_port=8080,
             id=session_id,
             result=None,
             http_dump_dir=http_dump_dir,
+            collector=Collector()
         ),
         agent_args=agent_args,
         agent_interactive=agent_interactive,

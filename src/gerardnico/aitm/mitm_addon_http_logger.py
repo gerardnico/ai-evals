@@ -6,18 +6,19 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+from gerardnico.aitm.api import Collector
 from gerardnico.aitm.context import datetime_to_fs_name
 from mitmproxy import http
+import json
 
 SSE_EVENT_SEPARATOR = "\n\n"
 
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyMethodMayBeStatic
 class HttpDumper:
 
-    def __init__(self, dump_dir: Path):
+    def __init__(self, dump_dir: Path, agent_host: str | None, collector: Collector):
 
         self.dir = dump_dir
         os.makedirs(self.dir, exist_ok=True)
@@ -25,7 +26,14 @@ class HttpDumper:
         # The buffer for sse parsing
         self.sse_chunk_buffer = ""
 
-    def _request_bytes(self, request: http.Request) -> bytes:
+        # Agent may call there base to check if there is an update for instance
+        self.agent_host = agent_host
+
+        # Collector
+        self.collector = collector
+
+    @staticmethod
+    def _request_bytes(request: http.Request) -> bytes:
         # Request line
         first_line = f"{request.method} {request.path} HTTP/{request.http_version.split('/')[-1]}\r\n"
         lines = [first_line.encode("utf-8", "replace")]
@@ -36,13 +44,17 @@ class HttpDumper:
             headers.insert(0, "Host", request.host)
 
         for k, v in headers.items(multi=True):
+            if k == "authorization":
+                # Don't dump secret
+                continue
             lines.append(f"{k}: {v}\r\n".encode("utf-8", "replace"))
         lines.append(b"\r\n")
 
         body = request.raw_content or b""
         return b"".join(lines) + body
 
-    def _response_bytes(self, response: http.Response) -> bytes:
+    @staticmethod
+    def _response_bytes(response: http.Response) -> bytes:
         """
         Response bytes because
         :param response:
@@ -59,7 +71,8 @@ class HttpDumper:
         body = response.raw_content or b""
         return b"".join(lines) + body
 
-    def _response_sse(self, response: http.Response):
+    @staticmethod
+    def _response_sse(response: http.Response):
 
         response_content = response.content
         if response.headers.get("content-type", "").startswith("text/event-stream") and response_content:
@@ -87,9 +100,9 @@ class HttpDumper:
             return
 
         if response.headers.get("content-type", "").startswith("text/event-stream"):
-            response.stream = self._handle_event_stream
+            response.stream = self._handle_sse_stream
 
-    def _handle_event_stream(self, chunk: bytes) -> bytes:
+    def _handle_sse_stream(self, chunk: bytes) -> bytes:
         """
         A "chunk" (is a TCP packet/read from the socket)
         An SSE "event" is a logical unit text ending in \n\n, per the SSE spec
@@ -99,12 +112,16 @@ class HttpDumper:
         while "\n\n" in self.sse_chunk_buffer:
             block, self.sse_chunk_buffer = self.sse_chunk_buffer.split("\n\n", 1)
             event = {}
-            for line in block.splitlines():
+            lines = block.splitlines()
+            for line in lines:
                 if line.startswith("data:"):
-                    event.setdefault("data", []).append(line[5:].strip())
+                    json_string = line[5:].strip()
+                    payload = json.loads(json_string)
+                    event.setdefault("data", []).append(payload)
                 elif line.startswith("event:"):
                     event["event"] = line[6:].strip()
             if event:
+                self.collector.events.append(event)
                 print(event, flush=True)
         # pass unmodified
         return chunk
@@ -114,31 +131,39 @@ class HttpDumper:
         https://docs.mitmproxy.org/stable/api/events.html#HTTPEvents.response
         This event fires after the entire body has been streamed
         """
-        req_path = self._get_file_path(flow, "request.http")
-        flow.request.headers.get("date")
-        with open(req_path, "wb") as f:
-            f.write(self._request_bytes(flow.request))
-
-        if flow.response is not None:
-            resp_path = self._get_file_path(flow, "response.http")
-            with open(resp_path, "wb") as f:
-                f.write(self._response_bytes(flow.response))
-
-        logger.info(f"[dump_flows] {flow.request.method} {flow.request.url} -> {flow.id}")
+        self._dump_fetch(flow)
 
     def error(self, flow: http.HTTPFlow):
         """
         Handle flows that errored before getting a response (still dump the request)
         """
-        if flow.response is None:
-            req_path = self._get_file_path(flow, "request.http")
-            if not os.path.exists(req_path):
-                with open(req_path, "wb") as f:
-                    f.write(self._request_bytes(flow.request))
+        self._dump_fetch(flow)
 
     def _get_file_path(self, flow: http.HTTPFlow, suffix: str):
         """
         Return the file path to dump the request or response
         """
         dt = datetime.fromtimestamp(flow.timestamp_start, tz=timezone.utc)
-        return self.dir / f"{datetime_to_fs_name(dt)}_{suffix}"
+
+        # Request may be performe to the agent host to check for update
+        fetch_type: str = "chat"
+        if self.agent_host is not None:
+            if flow.request.headers.get("host") == self.agent_host:
+                fetch_type = "base"
+
+        return self.dir / f"{datetime_to_fs_name(dt)}_{fetch_type}_{suffix}"
+
+    def _dump_fetch(self, flow):
+
+        req_path = self._get_file_path(flow, "request.http")
+        flow.request.headers.get("date")
+        with open(req_path, "wb") as f:
+            f.write(self._request_bytes(flow.request))
+
+        # In case of error, no response
+        if flow.response is not None:
+            resp_path = self._get_file_path(flow, "response.http")
+            with open(resp_path, "wb") as f:
+                f.write(self._response_bytes(flow.response))
+
+        logger.info(f"[dump_fetch] {flow.request.method} {flow.request.url} -> {flow.id}")

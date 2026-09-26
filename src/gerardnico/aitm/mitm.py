@@ -11,6 +11,7 @@ from gerardnico.aitm.context import Context
 from gerardnico.aitm.mitm_addon_http_logger import HttpDumper
 import secrets
 from mitmproxy import options
+from mitmproxy.proxy import context
 from mitmproxy.tools.dump import DumpMaster
 from mitmproxy.tools.web.master import WebMaster
 
@@ -20,14 +21,14 @@ import sys
 import subprocess
 
 
-class MitmproxyRunner:
-    def __init__(self, context: Context):
-        self.host = context.mitm_host
-        self.port = context.mitm_port
+class MitmRunner:
+    def __init__(self, aitm_context: Context):
+        self.host = aitm_context.mitm_host
+        self.port = aitm_context.mitm_port
         self.master = None
         self.thread = None
         self.created = threading.Event()
-        self.context = context
+        self.context = aitm_context
         self.start_web_instance = self.context.mitm_web_port is not None and self.context.agent_interactive == True
         # Password values starting with `$` are interpreted as an argon2 hash
         self.web_password = secrets.token_hex(16)
@@ -70,7 +71,11 @@ class MitmproxyRunner:
                 # skips adding the dumper addon that prints request/response info to stdout
                 with_dumper=False,
             )
-        self.master.addons.add(HttpDumper(self.context.session.http_dump_dir))
+        self.master.addons.add(HttpDumper(
+            self.context.session.http_dump_dir,
+            agent_host=self.context.agent.host,
+            self.context.session
+        ))
         self.created.set()
 
         await self.master.run()

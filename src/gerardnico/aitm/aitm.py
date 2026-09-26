@@ -6,7 +6,7 @@ import sys
 
 from gerardnico.aitm.api import Agent
 from gerardnico.aitm.context import Context
-from gerardnico.aitm.mitm import MitmproxyRunner
+from gerardnico.aitm.mitm import MitmRunner
 from gerardnico.aitm.pass_cli import get_secret
 
 
@@ -15,7 +15,7 @@ class Aitm:
     def __init__(self, context: Context):
         super().__init__()
         self.context = context
-        self.proxy = MitmproxyRunner(self.context)
+        self.proxy = MitmRunner(self.context)
         signal.signal(signal.SIGTERM, self.handle_shutdown)
         signal.signal(signal.SIGINT, self.handle_shutdown)
 
