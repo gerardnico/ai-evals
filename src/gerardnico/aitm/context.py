@@ -7,6 +7,10 @@ from datetime import datetime
 from platformdirs import user_data_dir
 
 
+def datetime_to_fs_name(time:datetime):
+    return time.isoformat(timespec="seconds").replace(":", "-")
+
+
 def build_context(mitm_port=8080,
                   agent_args=[],
                   agent=Agent.BASH) -> "Context":
@@ -23,20 +27,27 @@ def build_context(mitm_port=8080,
             if agent_args.__contains__("-p"):
                 agent_interactive = False
 
-    # Building context
+    # Runtime dir
+    runtime_dir: Path = Path.cwd() / ".aitm"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+
+    # Session
+    # we replace : because we get a problem in bash as it's a special character
+    session_id = datetime_to_fs_name(datetime.now())
+    http_dump_dir = runtime_dir / "sessions" / session_id / "http-dump"
+
     context = Context(
         agent=agent,
+        runtime_dir=runtime_dir,
         session=Session(
-            # we replace because we get a problem with : in bash
-            id=datetime.now().isoformat(timespec="seconds").replace(":", "-"),
-            result=None
+            id=session_id,
+            result=None,
+            http_dump_dir=http_dump_dir,
         ),
         agent_args=agent_args,
         agent_interactive=agent_interactive,
         mitm_port=mitm_port
     )
-    # Be sure to have the runtime dir
-    context.runtime_dir.mkdir(parents=True, exist_ok=True)
     return context
 
 

@@ -80,17 +80,6 @@ class Aitm:
                     agent_env |= {
                         "PI_CODING_AGENT_SESSION_DIR": str(session_directory)
                     }
-                    # agent_directory = self.context.runtime_dir / "pi-agent"
-                    # agent_directory.mkdir(parents=True, exist_ok=True)
-                    # pi.update_base_url(
-                    #     # default: ~/.pi/agent/models.json
-                    #     models_path=agent_directory / "models.json",
-                    #     provider="openrouter",
-                    #     base_url=f"{self.context.mitm_url}/{Provider.OPENROUTER.value}/api/v1",
-                    # )
-                    # agent_env |= {
-                    #     "PI_CODING_AGENT_DIR": str(agent_directory),
-                    # }
                     print("Starting pi...")
                     # https://pi.dev/docs/latest/environment-variables#pi-process-configuration
                     agent_env |= {

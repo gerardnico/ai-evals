@@ -8,7 +8,7 @@ import threading
 import time
 
 from gerardnico.aitm.context import Context
-from gerardnico.aitm.mitm_addon_fetch_logger import FetchLogger
+from gerardnico.aitm.mitm_addon_http_logger import HttpDumper
 import secrets
 from mitmproxy import options
 from mitmproxy.tools.dump import DumpMaster
@@ -70,9 +70,7 @@ class MitmproxyRunner:
                 # skips adding the dumper addon that prints request/response info to stdout
                 with_dumper=False,
             )
-
-        # self.master.addons.add(Redirect(self.context))
-        self.master.addons.add(FetchLogger(self.context))
+        self.master.addons.add(HttpDumper(self.context.session.http_dump_dir))
         self.created.set()
 
         await self.master.run()

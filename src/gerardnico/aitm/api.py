@@ -15,6 +15,8 @@ class Agent(str, Enum):
 class Session:
     # Session id
     id: str
+    # Dump Dir
+    http_dump_dir: Path
     # agent result
     result: CompletedProcess[str]|None
     # Request count

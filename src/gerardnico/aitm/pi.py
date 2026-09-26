@@ -7,9 +7,22 @@ from pathlib import Path
 
 def update_base_url(models_path: Path, provider: str, base_url: str, api_key: str | None=None) -> None:
     """
+    Deprecated for the HTTP proxy
+    We used it to set the proxy
     Set (or update) the base URL for the built-in provider in Pi's
     https://pi.dev/models
     https://pi.dev/docs/latest/configuration#agent-directory
+    # agent_directory = self.context.runtime_dir / "pi-agent"
+    # agent_directory.mkdir(parents=True, exist_ok=True)
+    # pi.update_base_url(
+    #     # default: ~/.pi/agent/models.json
+    #     models_path=agent_directory / "models.json",
+    #     provider="openrouter",
+    #     base_url=f"{self.context.mitm_url}/{Provider.OPENROUTER.value}/api/v1",
+    # )
+    # agent_env |= {
+    #     "PI_CODING_AGENT_DIR": str(agent_directory),
+    # }
     """
 
     # Load existing config if present, so we don't clobber other providers.
